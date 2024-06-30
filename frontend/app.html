@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Web API Request</title>
+        <style>
+            .spell{
+                text-align: center;
+                margin-top: 10px;
+            }
+            .spell_container {
+            text-align: center;
+            margin-top: 100px;
+            }
+            .output{
+                text-align: center;
+                margin-top : 30px;
+            }
+            .container {
+                display: flex;
+                justify-content: space-between;
+                padding: 20px;
+            }
+            .box {
+                border: 2px dashed #ccc;
+                padding: 20px;
+                width: 45%;
+            }
+            .instructions {
+                margin-top: 10px;
+            }
+            .convert-button {
+                display: block;
+                margin: 20px auto;
+                padding: 10px 20px;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+            .progress-container {
+                width: 100%;
+                background-color: #f0f0f0;
+                display: none;
+            }
+
+            .progress-bar {
+                width: 0;
+                height: 30px;
+                background-color: #4caf50;
+            }
+        </style>
+    </head>
+    <body>
+        <H2 class="spell">Spell Correction</H2>
+        <div class="spell_container"><input type="text" id="userInput" placeholder="Type your message">
+            <button onclick="sendRequest()">Send Request</button>
+            <script>
+                function sendRequest()
+                {
+                    const userInput = document.getElementById('userInput').value
+                    fetch('http://127.0.0.1:5000/spell_correct', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ sentence: userInput })
+                    }).then(response => response.json())
+                    .then(data => {
+                        alert(JSON.stringify(data.correctedSentence))
+                        document.getElementById('response-container').innerHTML = JSON.stringify(data.correctedSentence);
+                    }).catch(error => {
+                        console.error('Error:', error)
+                        document.getElementById('response-container').innerHTML = JSON.stringify(error);
+                    })
+                }
+            </script>
+        </div>
+        <div class="output">
+            <span>Corrected Sentence :</span>
+            <span id="response-container"></span>
+        </div>
+        <hr>
+        <div class="container">
+            <div class="box">
+                <input type="file" id="fileInput" accept=".txt,.js,.html,.css">
+                <textarea id="fileContent" rows="10" cols="50" placeholder="Your input code here:"></textarea>
+            </div>
+            <div class="box">
+                <textarea id="instructions" rows="10" cols="50" placeholder="Spell Corrected Content:"></textarea>
+            </div>
+        </div>
+        <button class="convert-button" onclick="convertFile()">Spell Correct</button>
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar" id="progressBar">
+            </div>
+        </div>
+    
+        <script>
+            document.getElementById('fileInput').addEventListener('change', function() {
+                const file = this.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('fileContent').value = e.target.result;
+                    };
+                    reader.readAsText(file);
+                }
+            });
+    
+            // Method to send request to the server and receive the response
+            function convertFile() {
+                const content = document.getElementById('fileContent').value;
+                const instructions = document.getElementById('instructions').value;
+
+                // Progress bar implemenation
+                var progressContainer = document.getElementById("progressContainer");
+                var progressBar = document.getElementById("progressBar");
+                progressContainer.style.display = "block";
+                var width = 1;
+                var increment = 0.03;
+                var id = setInterval(frame, 60);
+                var responseReceived = false;
+                function frame() {
+                    if(responseReceived == false && width == 99){
+                        width = 1;
+                    }
+                    if (width >= 100) {
+                    clearInterval(id);
+                    progressContainer.style.display = "none";
+                    } else {
+                    width = width + increment;
+                    progressBar.style.width = width + "%";
+                    }
+                }
+                fetch('http://127.0.0.1:5000/spell_correct', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ sentence: content })
+                    }).then(response => response.json())
+                    .then(data => {
+                        increment = 10;
+                        responseReceived = true;
+                        alert(JSON.stringify(data.correctedSentence))
+                        document.getElementById('instructions').value = JSON.stringify(data.correctedSentence);
+                    }).catch(error => {
+                        increment = 10;
+                        responseReceived = true;
+                        console.error('Error:', error)
+                        document.getElementById('instructions').value = JSON.stringify(error);
+                    })
+            }
+        </script>
+    </body>
+</html>
